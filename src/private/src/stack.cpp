@@ -14,10 +14,13 @@ Stack::Stack(Primitives& p, Elysium& ely, int index){
 
     printf("PATH-> %s\n", path.c_str());
 
+    //m_texture = std::make_shared<Texture>(path.c_str());
+    m_texture = std::make_shared<Texture>("../assets/cube_textures/color15.png");
+	//m_texture = ely.resource.Load<Texture>(path.c_str());
 
-	m_texture = ely.resource.Load<Texture>(path.c_str());
-	SceneObject cube_first(p.getCube(), m_texture, player);
-	ely.ecs.set_entity_component_value(player, cube_first);
+    m_cube = std::make_shared<SceneObject>(p.getCube(), m_texture, player);
+
+	ely.ecs.set_entity_component_value(player, *m_cube.get());
 	ely.ecs.set_entity_component_value(player, tr);
 }
 

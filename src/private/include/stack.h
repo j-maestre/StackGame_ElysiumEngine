@@ -13,4 +13,5 @@ class Stack{
     private:
 
     std::shared_ptr<Texture> m_texture;
+    std::shared_ptr<SceneObject> m_cube;
 };

@@ -40,14 +40,14 @@ int main(int, char**) {
 
 	auto player = ely.ecs.add_entity();
 
-	/*Transform tr;
+	Transform tr;
 	tr.position_ = { 0.0f, 0.0f, 0.0f };
 	tr.rotation_ = { 0.0f,0.0f,0.0f };
 	tr.scale_ = { 5.0f, 1.0f, 5.0f };
 	std::shared_ptr<Texture> texture = ely.resource.Load<Texture>("../assets/cube_textures/color15.png");
 	SceneObject cube_first(primitive.getCube(), texture, player);
 	ely.ecs.set_entity_component_value(player, cube_first);
-	ely.ecs.set_entity_component_value(player, tr);*/
+	ely.ecs.set_entity_component_value(player, tr);
 
 	//std::shared_ptr<Geometry> cube = primitive.getCube();	
 
@@ -69,7 +69,7 @@ int main(int, char**) {
 	auto directional_entity = ely.ecs.add_entity();
 	ely.ecs.set_entity_component_value(directional_entity, directional_light);
 
-	Stack s{primitive, ely, 15};
+	//Stack s{primitive, ely, 15};
 
 	while (!w.isDone()) {
 		w.frame();
