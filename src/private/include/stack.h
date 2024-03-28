@@ -5,13 +5,14 @@
 class Stack{
 
     public:
-        Stack(Primitives& p, Elysium& e, int index);
+
+        Stack();
+        Stack(size_t entity);
         ~Stack();
-        Stack(const Stack&) = delete;
-        Stack(Stack&&) = delete;
+        Stack(const Stack&);
+        Stack(Stack&&);
 
+        Stack& operator=(const Stack& other);
     private:
-
-    std::shared_ptr<Texture> m_texture;
-    std::shared_ptr<SceneObject> m_cube;
+    size_t m_entity;
 };

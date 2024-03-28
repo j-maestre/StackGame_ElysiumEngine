@@ -1,5 +1,9 @@
+#include <vector>
+
 #include "engine/elysium.h"
 #include "private/include/stack.h"
+
+#define TOTAL_STACKS 39
 
 int main(int, char**) {
 
@@ -38,16 +42,30 @@ int main(int, char**) {
 	ely.ecs.set_entity_component_value(camera_entity, camera_pos);
 	
 
-	auto player = ely.ecs.add_entity();
+	Stack stacks[TOTAL_STACKS];
 
-	Transform tr;
-	tr.position_ = { 0.0f, 0.0f, 0.0f };
-	tr.rotation_ = { 0.0f,0.0f,0.0f };
-	tr.scale_ = { 5.0f, 1.0f, 5.0f };
-	std::shared_ptr<Texture> texture = ely.resource.Load<Texture>("../assets/cube_textures/color15.png");
-	SceneObject cube_first(primitive.getCube(), texture, player);
-	ely.ecs.set_entity_component_value(player, cube_first);
-	ely.ecs.set_entity_component_value(player, tr);
+	// TOTAL_STACKS
+	for (int i = 0; i < 1; i++) {
+		auto brick = ely.ecs.add_entity();
+		Transform tr;
+		tr.position_ = { 0.0f, (float)i * 2.0f, 0.0f};
+		tr.rotation_ = { 0.0f,0.0f,0.0f };
+		tr.scale_ = { 5.0f, 1.0f, 5.0f };
+
+		std::string path{"../assets/cube_textures/color"};
+		path += std::to_string(i);
+		path += ".png";
+
+		//std::shared_ptr<Texture> texture = ely.resource.Load<Texture>(path.c_str());
+		std::shared_ptr<Texture> texture = std::make_shared<Texture>(Texture{path.c_str()});
+		//Texture texture{"../assets/cube_textures/color0.png"};
+		SceneObject cube_first(primitive.getCube(), texture, brick);
+		ely.ecs.set_entity_component_value(brick, cube_first);
+		ely.ecs.set_entity_component_value(brick, tr);
+		//Stack s{brick};
+		//stacks[0] = s;
+	}
+	
 
 	//std::shared_ptr<Geometry> cube = primitive.getCube();	
 
@@ -68,8 +86,6 @@ int main(int, char**) {
 	directional_light.color = glm::vec3(0.5f, 0.5f, 0.5f);
 	auto directional_entity = ely.ecs.add_entity();
 	ely.ecs.set_entity_component_value(directional_entity, directional_light);
-
-	//Stack s{primitive, ely, 15};
 
 	while (!w.isDone()) {
 		w.frame();
