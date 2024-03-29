@@ -34,7 +34,7 @@ int main(int, char**) {
 	auto camera_entity = ely.ecs.add_entity();
 	Camera camera(camera_entity, w, true);
 	Transform camera_pos;
-	camera_pos.position_ = { 0.0f, 25.0f, 35.0f };
+	camera_pos.position_ = { 0.0f, ((float)TOTAL_STACKS * 2.0f) + 25.0f, 35.0f};
 	camera_pos.rotation_ = { 0.0f, -0.6f, -1.0f };
 	camera_pos.scale_ = { 1.0f, 1.0f, 1.0f };
 	camera.setSpeedModify(10.0f);
@@ -45,20 +45,17 @@ int main(int, char**) {
 	std::vector<std::shared_ptr<Texture>> textures;
 	std::vector<SceneObject> objects;
 	Stack stacks[TOTAL_STACKS];
-
-	for (int i = 0; i < 3; i++) {
-		std::string path{ "../assets/cube_textures/color" };
+		
+	for (int i = 0; i < TOTAL_STACKS; i++) {
+		std::string path = "../assets/cube_textures/color";
 		path += std::to_string(i);
 		path += ".png";
-
-		printf("Path-> %s\n", path.c_str());
-
 		std::shared_ptr<Texture> texture = ely.resource.Load<Texture>(path.c_str());
 		textures.push_back(texture);
-	}	
+	}
 
 	// TOTAL_STACKS
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < TOTAL_STACKS; i++) {
 		auto brick = ely.ecs.add_entity();
 		Transform tr;
 		tr.position_ = { 0.0f, (float)i * 2.0f, 0.0f};
@@ -106,7 +103,7 @@ int main(int, char**) {
 		ps.apply(ely.ecs);
 		ely.cam.apply();
 		ely.graph.apply();
-		ely.cam.updateEditorCamera(w.getDeltaTime());
+		//ely.cam.updateEditorCamera(w.getDeltaTime());
 
 		
         
