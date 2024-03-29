@@ -42,24 +42,36 @@ int main(int, char**) {
 	ely.ecs.set_entity_component_value(camera_entity, camera_pos);
 	
 
+	std::vector<std::shared_ptr<Texture>> textures;
+	std::vector<SceneObject> objects;
 	Stack stacks[TOTAL_STACKS];
 
+	for (int i = 0; i < 3; i++) {
+		std::string path{ "../assets/cube_textures/color" };
+		path += std::to_string(i);
+		path += ".png";
+
+		printf("Path-> %s\n", path.c_str());
+
+		std::shared_ptr<Texture> texture = ely.resource.Load<Texture>(path.c_str());
+		textures.push_back(texture);
+	}	
+
 	// TOTAL_STACKS
-	for (int i = 0; i < 1; i++) {
+	for (int i = 0; i < 3; i++) {
 		auto brick = ely.ecs.add_entity();
 		Transform tr;
 		tr.position_ = { 0.0f, (float)i * 2.0f, 0.0f};
 		tr.rotation_ = { 0.0f,0.0f,0.0f };
 		tr.scale_ = { 5.0f, 1.0f, 5.0f };
 
-		std::string path{"../assets/cube_textures/color"};
-		path += std::to_string(i);
-		path += ".png";
-
-		//std::shared_ptr<Texture> texture = ely.resource.Load<Texture>(path.c_str());
-		std::shared_ptr<Texture> texture = std::make_shared<Texture>(Texture{path.c_str()});
+	
+		//std::shared_ptr<Texture> texture = std::make_shared<Texture>(Texture{path.c_str()});
 		//Texture texture{"../assets/cube_textures/color0.png"};
-		SceneObject cube_first(primitive.getCube(), texture, brick);
+
+		SceneObject cube_first(primitive.getCube(), textures[i], brick);
+		objects.push_back(cube_first);
+
 		ely.ecs.set_entity_component_value(brick, cube_first);
 		ely.ecs.set_entity_component_value(brick, tr);
 		//Stack s{brick};
@@ -86,6 +98,7 @@ int main(int, char**) {
 	directional_light.color = glm::vec3(0.5f, 0.5f, 0.5f);
 	auto directional_entity = ely.ecs.add_entity();
 	ely.ecs.set_entity_component_value(directional_entity, directional_light);
+
 
 	while (!w.isDone()) {
 		w.frame();
