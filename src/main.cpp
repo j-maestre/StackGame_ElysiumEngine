@@ -5,6 +5,11 @@
 
 #define TOTAL_STACKS 39
 
+
+void MoveStack(){
+
+}
+
 int main(int, char**) {
 
 	Engine e;
@@ -45,6 +50,7 @@ int main(int, char**) {
 	std::vector<std::shared_ptr<Texture>> textures;
 	std::vector<SceneObject> objects;
 	Stack stacks[TOTAL_STACKS];
+	size_t stack_ids[TOTAL_STACKS];
 		
 	for (int i = 0; i < TOTAL_STACKS; i++) {
 		std::string path = "../assets/cube_textures/color";
@@ -57,6 +63,7 @@ int main(int, char**) {
 	// TOTAL_STACKS
 	for (int i = 0; i < TOTAL_STACKS; i++) {
 		auto brick = ely.ecs.add_entity();
+		stack_ids[i] = brick;
 		Transform tr;
 		tr.position_ = { 0.0f, (float)i * 2.0f, 0.0f};
 		tr.rotation_ = { 0.0f,0.0f,0.0f };
@@ -74,6 +81,9 @@ int main(int, char**) {
 		//Stack s{brick};
 		//stacks[0] = s;
 	}
+
+
+	Transform* t = ely.ecs.get_entity_component<Transform>(stack_ids[TOTAL_STACKS-1]);
 	
 
 	//std::shared_ptr<Geometry> cube = primitive.getCube();	
@@ -96,17 +106,18 @@ int main(int, char**) {
 	auto directional_entity = ely.ecs.add_entity();
 	ely.ecs.set_entity_component_value(directional_entity, directional_light);
 
-
+	double count = 0.0;
 	while (!w.isDone()) {
 		w.frame();
 
 		ps.apply(ely.ecs);
 		ely.cam.apply();
 		ely.graph.apply();
+
+		count += w.getDeltaTime();
+		t->position_[0] = cosf(count * 3.0f) * 5.0f;
 		//ely.cam.updateEditorCamera(w.getDeltaTime());
 
-		
-        
 		w.render();
 	};
 
