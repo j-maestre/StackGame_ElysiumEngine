@@ -1,14 +1,59 @@
 #include <vector>
 
 #include "engine/elysium.h"
-#include "private/include/stack.h"
+//#include "private/include/stack.h"
 
 #define TOTAL_STACKS 39
 
 
-void MoveStack(){
+const float default_scale = 5.0f;
+const float stack_speed = 3.0f;
 
+struct Stack{
+	size_t id;
+	float scale = default_scale;
+	bool moving = false;
+	float direction = 1.0f;
+};
+
+
+std::vector<std::shared_ptr<Texture>> textures;
+std::vector<SceneObject> objects;
+//static Stack stacks[TOTAL_STACKS];
+static Stack stacks[TOTAL_STACKS];
+
+static float current_scale = default_scale; // Scale used for the newest stack based on last scale
+static float max_distance = 4.0f;
+
+
+
+
+
+void MoveStack(Stack& stack, double dt, Elysium& e, Input& in){
+
+	
+	Transform* t = e.ecs.get_entity_component<Transform>(stack.id);
+	
+	// Check input
+	if (in.isMouseButtonPressed("MOUSE LEFT")) {
+		printf("MOUSE LEFT\n");
+	}
+
+	// Check distance
+	if (t->position_[0] >= max_distance || t->position_[0] <= (-max_distance)) {
+		stack.direction *= -1.0f;
+	}
+
+	// Moving
+	t->position_[0] += (dt * stack_speed) * stack.direction;
+	//printf("hola %f\n", t->position_[0]);
+
+
+	// Cuando detecte el click, dejar de mover al bicho, comprobar la posicion y aumentar el stack actual
+	
 }
+
+
 
 int main(int, char**) {
 
@@ -47,10 +92,7 @@ int main(int, char**) {
 	ely.ecs.set_entity_component_value(camera_entity, camera_pos);
 	
 
-	std::vector<std::shared_ptr<Texture>> textures;
-	std::vector<SceneObject> objects;
-	Stack stacks[TOTAL_STACKS];
-	size_t stack_ids[TOTAL_STACKS];
+	
 		
 	for (int i = 0; i < TOTAL_STACKS; i++) {
 		std::string path = "../assets/cube_textures/color";
@@ -63,11 +105,15 @@ int main(int, char**) {
 	// TOTAL_STACKS
 	for (int i = 0; i < TOTAL_STACKS; i++) {
 		auto brick = ely.ecs.add_entity();
-		stack_ids[i] = brick;
+		
+		Stack s;
+		s.id = brick;
+		stacks[i] = s;
+
 		Transform tr;
 		tr.position_ = { 0.0f, (float)i * 2.0f, 0.0f};
 		tr.rotation_ = { 0.0f,0.0f,0.0f };
-		tr.scale_ = { 5.0f, 1.0f, 5.0f };
+		tr.scale_ = { default_scale, 1.0f, default_scale };
 
 	
 		//std::shared_ptr<Texture> texture = std::make_shared<Texture>(Texture{path.c_str()});
@@ -81,9 +127,6 @@ int main(int, char**) {
 		//Stack s{brick};
 		//stacks[0] = s;
 	}
-
-
-	Transform* t = ely.ecs.get_entity_component<Transform>(stack_ids[TOTAL_STACKS-1]);
 	
 
 	//std::shared_ptr<Geometry> cube = primitive.getCube();	
@@ -106,7 +149,12 @@ int main(int, char**) {
 	auto directional_entity = ely.ecs.add_entity();
 	ely.ecs.set_entity_component_value(directional_entity, directional_light);
 
+
+	Input input{w.get()};
+
+	int current_stack = TOTAL_STACKS-1; // this must be between 0 and TOTAL_STACK
 	double count = 0.0;
+	unsigned int frame_count = 0;
 	while (!w.isDone()) {
 		w.frame();
 
@@ -114,10 +162,12 @@ int main(int, char**) {
 		ely.cam.apply();
 		ely.graph.apply();
 
-		count += w.getDeltaTime();
-		t->position_[0] = cosf(count * 3.0f) * 5.0f;
+		if (frame_count >= 20) {
+			MoveStack(stacks[current_stack], w.getDeltaTime(), ely, input);
+		}
 		//ely.cam.updateEditorCamera(w.getDeltaTime());
 
+		frame_count++;
 		w.render();
 	};
 
