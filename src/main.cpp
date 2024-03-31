@@ -40,6 +40,9 @@ static float bonus_scale = 0.2f;
 
 static unsigned int streak = 1;
 
+static int current_stack = TOTAL_STACKS - 1; // this must be between 0 and TOTAL_STACK
+static unsigned int frame_count = 0;
+
 enum class EffectType {
 	Perfect,
 	Near,
@@ -178,9 +181,27 @@ bool MoveStack(int id_stack, double dt, Elysium& e, Input& in, auto& ent_point){
 }
 
 
-void RePlay(std::vector<SceneObject>& objects, Elysium& ely, Stack* stacks){
+void ReStart(Elysium& ely, Stack* stacks){
 	streak = 1;
 	end_game = false;
+	streak = 1;
+	stack_speed = 3.0f;
+	current_stack = TOTAL_STACKS - 1;
+	frame_count = 0;
+	current_height = TOTAL_STACKS * 2.0f;
+
+	for (int i = 0; i < TOTAL_STACKS; i++) {
+		Transform* t = ely.ecs.get_entity_component<Transform>(stacks[i].id);
+		t->scale_[0] = default_scale;
+		t->scale_[1] = 1.0f;
+		t->scale_[2] = default_scale;
+
+		t->position_[0] = 0.0f;
+		t->position_[1] = i * distance_between_stacks;
+
+		stacks[i].scale = default_scale;
+		stacks[i].moving = true;
+	}
 	
 }
 
@@ -284,6 +305,10 @@ int main(int, char**) {
 	auto text_2 = ely.ecs.add_entity();
 	UIText auxiliar2("", (1024.0f * 0.5f) - 250.0f, 400.0f, 1.3f, { 0.1f,1.0f,0.1f });
 	ely.ecs.set_entity_component_value(text_2, auxiliar2);
+	
+	auto text_3 = ely.ecs.add_entity();
+	UIText auxiliar3("", (1024.0f * 0.5f) - 250.0f, 320.0f, 1.0f, { 0.25f,0.41f,0.88f });
+	ely.ecs.set_entity_component_value(text_3, auxiliar3);
 
 	Light ambientlight(Light::Type::kAmbient_Light);
 	auto ambient_entity = ely.ecs.add_entity();
@@ -306,9 +331,8 @@ int main(int, char**) {
 
 	Input input{w.get()};
 
-	int current_stack = TOTAL_STACKS-1; // this must be between 0 and TOTAL_STACK
 	double count = 0.0;
-	unsigned int frame_count = 0;
+	
 
 
 	Transform* transform_cam = ely.ecs.get_entity_component<Transform>(camera_entity);
@@ -352,6 +376,20 @@ int main(int, char**) {
 			UIText* edit_text2 = ely.ecs.get_entity_component<UIText>(text_2);
 			std::string text = "FINAL SCORE  " + std::to_string(score_user);
 			edit_text2->text_ = text;
+			
+			UIText* edit_text3 = ely.ecs.get_entity_component<UIText>(text_3);
+			std::string text2 = "Press R to restart";
+			edit_text3->text_ = text2;
+
+			if (input.isKeyPressed("R")) {
+				ReStart(ely, stacks);
+				transform_cam->position_[1] = ((float)TOTAL_STACKS * 2.0f) + 25.0f;
+				text = "";
+				edit_text2->text_ = text;
+
+				text2 = "";
+				edit_text3->text_ = text2;
+			}
 		}
 		//ely.cam.updateEditorCamera(w.getDeltaTime());
 
