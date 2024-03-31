@@ -1,5 +1,9 @@
-Error Conocidos:
+# Stack Game
 
--La camara tiene que ser si o si en editor
+Game developed in C++ using Elysium engine
 
-Toda la guia y documentación la encontraras en en la carpeta doc
+Elysium engine is made by [alejandro-diazro](https://github.com/alejandro-diazro) and [joel-vingui](https://github.com/Jovingi)
+
+
+![Gameplay](assets/gameplay.gif)
+
