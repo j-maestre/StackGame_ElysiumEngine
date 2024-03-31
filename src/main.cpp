@@ -35,8 +35,41 @@ static unsigned int score_user = 0;
 
 static bool end_game = false;
 
+static float bonus_scale = 0.2f;
 
-bool MoveStack(int id_stack, double dt, Elysium& e, Input& in){
+static unsigned int streak = 1;
+
+enum class EffectType {
+	Perfect,
+	Near,
+	Bad,
+	None
+};
+
+static glm::vec3 perfect_color(0.1f, 1.0f, 0.1f);
+static glm::vec3 near_color(0.1f, 0.1f, 1.0f);
+static glm::vec3 bad_color(1.0f, 0.1f, 0.1f);
+static glm::vec3 none_color(1.0f, 1.0f, 1.0f);
+
+void PlayEffect(auto& point_light, EffectType type) {
+	switch (type) {
+	case EffectType::Perfect:
+		point_light->setColor(perfect_color);
+	break;
+	case EffectType::Near:
+		point_light->setColor(near_color);
+	break;
+	case EffectType::Bad:
+		point_light->setColor(bad_color);
+	break;
+	default:
+		point_light->setColor(none_color);
+	break;
+	}
+}
+
+
+bool MoveStack(int id_stack, double dt, Elysium& e, Input& in, auto& ent_point){
 
 	clicked_last_frame = clicked;
 	bool ret = false;
@@ -65,16 +98,32 @@ bool MoveStack(int id_stack, double dt, Elysium& e, Input& in){
 			stack.moving = false;
 			ret = true;
 			clicked = true;
-			score_user++;
 
 			// Comprobar lo cerca que me he quedado
 			// between default_distance
-			printf("Position-> %f\n",t->position_[0]);
 
+			printf("Position-> %f\n",t->position_[0]);
 			// Margen de error para el perfect
 			if (t->position_[0] < 0.1f && t->position_[0] > -0.1f) {
 				printf("Perfect!\n");
+				streak++;
+				t->scale_[0] += bonus_scale;
+				PlayEffect(ent_point, EffectType::Perfect);
 			}else{
+
+
+				// Check distance to play animation
+				if (std::abs(t->position_[0]) < 0.2f) {
+					PlayEffect(ent_point, EffectType::Near);
+				}else if (std::abs(t->position_[0]) < 0.3f) {
+					PlayEffect(ent_point, EffectType::None);
+				}else{
+					PlayEffect(ent_point, EffectType::Bad);
+				}
+				
+
+
+				streak = 1;
 				// Pillo lo que me he pasado
 				float abs = std::abs(t->position_[0]);
 				t->scale_[0] -= abs;
@@ -84,6 +133,8 @@ bool MoveStack(int id_stack, double dt, Elysium& e, Input& in){
 				}
 				t->position_[0] = 0.0f;
 			}
+
+			score_user += streak;
 
 			
 
@@ -111,7 +162,7 @@ bool MoveStack(int id_stack, double dt, Elysium& e, Input& in){
 	}
 
 	
-	printf("hola %f dt: %f\n", t->position_[0], dt);
+	//printf("hola %f dt: %f\n", t->position_[0], dt);
 
 
 	// Cuando detecte el click, dejar de mover al bicho, comprobar la posicion y aumentar el stack actual
@@ -160,14 +211,21 @@ int main(int, char**) {
 	
 
 	
-		
-	for (int i = 0; i < TOTAL_STACKS; i++) {
-		std::string path = "../assets/cube_textures/color";
-		path += std::to_string(i);
-		path += ".png";
-		std::shared_ptr<Texture> texture = ely.resource.Load<Texture>(path.c_str());
-		textures.push_back(texture);
+	std::shared_ptr<Texture> texture_fondo;
+	for (int i = 0; i < TOTAL_STACKS+1; i++) {
+		if (i < TOTAL_STACKS) {
+			std::string path = "../assets/cube_textures/color";
+			path += std::to_string(i);
+			path += ".png";
+			std::shared_ptr<Texture> texture = ely.resource.Load<Texture>(path.c_str());
+			textures.push_back(texture);
+		}else {
+			std::string path = "../assets/cube_textures/fondo.png";
+			texture_fondo = ely.resource.Load<Texture>(path.c_str());
+			//textures.push_back(texture);
+		}
 	}
+	//std::shared_ptr<Texture> texture_fondo = std::make_shared<Texture>(Texture{ "../assets/cube_textures/fondo.png" });
 
 	// TOTAL_STACKS
 	for (int i = 0; i < TOTAL_STACKS; i++) {
@@ -196,6 +254,15 @@ int main(int, char**) {
 	}
 	
 
+	auto fondo = ely.ecs.add_entity();
+	Transform tr;
+	tr.position_ = { 0.0f, 0.0f, -20.0f };
+	tr.rotation_ = { 0.0f,0.0f,0.0f };
+	tr.scale_ = { 500.0f, 500.0f, 1.0f};
+	SceneObject cube(primitive.getCube(), texture_fondo, fondo);
+	ely.ecs.set_entity_component_value(fondo, cube);
+	ely.ecs.set_entity_component_value(fondo, tr);
+
 	//std::shared_ptr<Geometry> cube = primitive.getCube();	
 
 	auto text_1 = ely.ecs.add_entity();
@@ -216,6 +283,14 @@ int main(int, char**) {
 	auto directional_entity = ely.ecs.add_entity();
 	ely.ecs.set_entity_component_value(directional_entity, directional_light);
 
+	Light point_light(Light::Type::kPoint_Light, { 0.0f, current_height - 3.0f, -5.0f });
+	point_light.color = glm::vec3(0.1f, 0.1f, 1.0f);
+	auto point_light_entity = ely.ecs.add_entity();
+	//point_light.setAttenuation(glm::vec3(1.0f, 0.35f, 0.44f));
+	ely.ecs.set_entity_component_value(point_light_entity, point_light);
+
+	auto ent_point = ely.ecs.get_entity_component<Light>(point_light_entity);
+
 
 	Input input{w.get()};
 
@@ -232,14 +307,31 @@ int main(int, char**) {
 		ely.cam.apply();
 		ely.graph.apply();
 
+		count += w.getDeltaTime();
+
+		ent_point->setPosition(glm::vec3(0.0f, current_height - 3.0f,0.0f));
+		//printf("Position x %f y %f z %f\n", cosf(count), current_height + 13.0f, 0.0f);
+
 		if (frame_count >= 20 && !end_game) {
-			if (MoveStack(current_stack, w.getDeltaTime(), ely, input)) {
+			if (MoveStack(current_stack, w.getDeltaTime(), ely, input, ent_point)) {
+				Transform* t_last = ely.ecs.get_entity_component<Transform>(stacks[current_stack].id);
+				Stack& last_stack = stacks[current_stack];
 				current_stack++;
 				current_stack %= TOTAL_STACKS;
 				stacks[current_stack].moving = true;
+
+
 				if (!end_game) {
 					Transform* t = ely.ecs.get_entity_component<Transform>(stacks[current_stack].id);
 					t->position_[1] = current_height;
+
+					if(last_stack.direction > 0.0f){
+						t->position_[0] = max_distance;
+						stacks[current_stack].direction = -1.0f;
+					}else{
+						t->position_[0] = -max_distance;
+						stacks[current_stack].direction = 1.0f;
+					}
 				}
 				current_height += distance_between_stacks;
 				transform_cam->position_[1] += distance_between_stacks;
@@ -249,7 +341,7 @@ int main(int, char**) {
 			std::string text = "FINAL SCORE  " + std::to_string(score_user);
 			edit_text2->text_ = text;
 		}
-		ely.cam.updateEditorCamera(w.getDeltaTime());
+		//ely.cam.updateEditorCamera(w.getDeltaTime());
 
 
 		UIText* edit_text2 = ely.ecs.get_entity_component<UIText>(text_1);
