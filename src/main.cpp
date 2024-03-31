@@ -8,7 +8,8 @@
 
 
 const float default_scale = 5.0f;
-const float stack_speed = 3.0f;
+static float stack_speed = 3.0f;
+const float stack_speed_increaser = 0.1f;
 
 struct Stack{
 	size_t id;
@@ -98,6 +99,7 @@ bool MoveStack(int id_stack, double dt, Elysium& e, Input& in, auto& ent_point){
 			stack.moving = false;
 			ret = true;
 			clicked = true;
+			stack_speed += stack_speed_increaser;
 
 			// Comprobar lo cerca que me he quedado
 			// between default_distance
@@ -171,6 +173,12 @@ bool MoveStack(int id_stack, double dt, Elysium& e, Input& in, auto& ent_point){
 	return ret;
 }
 
+
+void RePlay(std::vector<SceneObject>& objects, Elysium& ely, Stack* stacks){
+	streak = 1;
+	end_game = false;
+	
+}
 
 
 int main(int, char**) {
