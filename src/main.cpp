@@ -12,7 +12,7 @@ const float stack_speed = 3.0f;
 struct Stack{
 	size_t id;
 	float scale = default_scale;
-	bool moving = false;
+	bool moving = true;
 	float direction = 1.0f;
 };
 
@@ -24,20 +24,34 @@ static Stack stacks[TOTAL_STACKS];
 
 static float current_scale = default_scale; // Scale used for the newest stack based on last scale
 static float max_distance = 4.0f;
+static float current_height = TOTAL_STACKS * 2.0f;
+static float distance_between_stacks = 2.0f;
+
+static bool clicked = false;
+static bool clicked_last_frame = false;
 
 
+bool MoveStack(Stack& stack, double dt, Elysium& e, Input& in){
 
-
-
-void MoveStack(Stack& stack, double dt, Elysium& e, Input& in){
-
+	clicked_last_frame = clicked;
+	bool ret = false;
 	
 	Transform* t = e.ecs.get_entity_component<Transform>(stack.id);
-	
+
 	// Check input
 	if (in.isMouseButtonPressed("MOUSE LEFT")) {
-		printf("MOUSE LEFT\n");
+		//printf("MOUSE LEFT\n");
+		if (!clicked || !clicked_last_frame) {
+			// Check only one click per time
+			stack.moving = false;
+			ret = true;
+			clicked = true;
+		}
+	}else {
+		clicked = false;
 	}
+
+
 
 	// Check distance
 	if (t->position_[0] >= max_distance || t->position_[0] <= (-max_distance)) {
@@ -45,12 +59,16 @@ void MoveStack(Stack& stack, double dt, Elysium& e, Input& in){
 	}
 
 	// Moving
-	t->position_[0] += (dt * stack_speed) * stack.direction;
+	if (stack.moving) {
+		t->position_[0] += (dt * stack_speed) * stack.direction;
+	}
 	//printf("hola %f\n", t->position_[0]);
 
 
 	// Cuando detecte el click, dejar de mover al bicho, comprobar la posicion y aumentar el stack actual
 	
+	
+	return ret;
 }
 
 
@@ -111,7 +129,7 @@ int main(int, char**) {
 		stacks[i] = s;
 
 		Transform tr;
-		tr.position_ = { 0.0f, (float)i * 2.0f, 0.0f};
+		tr.position_ = { 0.0f, (float)i * distance_between_stacks, 0.0f};
 		tr.rotation_ = { 0.0f,0.0f,0.0f };
 		tr.scale_ = { default_scale, 1.0f, default_scale };
 
@@ -155,6 +173,9 @@ int main(int, char**) {
 	int current_stack = TOTAL_STACKS-1; // this must be between 0 and TOTAL_STACK
 	double count = 0.0;
 	unsigned int frame_count = 0;
+
+
+	Transform* transform_cam = ely.ecs.get_entity_component<Transform>(camera_entity);
 	while (!w.isDone()) {
 		w.frame();
 
@@ -163,9 +184,14 @@ int main(int, char**) {
 		ely.graph.apply();
 
 		if (frame_count >= 20) {
-			MoveStack(stacks[current_stack], w.getDeltaTime(), ely, input);
+			if (MoveStack(stacks[current_stack], w.getDeltaTime(), ely, input)) {
+				current_stack++;
+				current_stack %= TOTAL_STACKS;
+				current_height += distance_between_stacks;
+				transform_cam->position_[1] += distance_between_stacks;
+			}
 		}
-		//ely.cam.updateEditorCamera(w.getDeltaTime());
+		ely.cam.updateEditorCamera(w.getDeltaTime());
 
 		frame_count++;
 		w.render();
