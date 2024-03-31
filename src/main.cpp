@@ -119,13 +119,17 @@ bool MoveStack(int id_stack, double dt, Elysium& e, Input& in, auto& ent_point){
 					PlayEffect(ent_point, EffectType::Near);
 				}else if (std::abs(t->position_[0]) < 0.3f) {
 					PlayEffect(ent_point, EffectType::None);
+					if (streak >= 2) {
+						streak--;
+					}
 				}else{
 					PlayEffect(ent_point, EffectType::Bad);
+					streak = 1;
 				}
 				
 
 
-				streak = 1;
+				
 				// Pillo lo que me he pasado
 				float abs = std::abs(t->position_[0]);
 				t->scale_[0] -= abs;
