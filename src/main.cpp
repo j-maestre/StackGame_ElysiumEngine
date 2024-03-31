@@ -33,46 +33,60 @@ static bool clicked_last_frame = false;
 
 static unsigned int score_user = 0;
 
+static bool end_game = false;
+
 
 bool MoveStack(int id_stack, double dt, Elysium& e, Input& in){
 
 	clicked_last_frame = clicked;
 	bool ret = false;
 	
+
+	int id_last = TOTAL_STACKS - 1;
+	if(id_stack != 0){
+		id_last = id_stack - 1;
+	}
+	
 	Stack& stack = stacks[id_stack];
+	Stack& stack_last = stacks[id_last];
+
 	Transform* t = e.ecs.get_entity_component<Transform>(stack.id);
+	Transform* t2 = e.ecs.get_entity_component<Transform>(stack_last.id);
+
+	// Spawn con la escala del anterior
+	t->scale_[0] = t2->scale_[0];
 
 	// Check input
 	if (in.isMouseButtonPressed("MOUSE LEFT")) {
 		//printf("MOUSE LEFT\n");
-		score_user++;
+		
 		if (!clicked || !clicked_last_frame) {
 			// Check only one click per time
 			stack.moving = false;
 			ret = true;
 			clicked = true;
+			score_user++;
 
 			// Comprobar lo cerca que me he quedado
 			// between default_distance
 			printf("Position-> %f\n",t->position_[0]);
 
-			if (t->position_[0] < 0.1f) {
+			// Margen de error para el perfect
+			if (t->position_[0] < 0.1f && t->position_[0] > -0.1f) {
 				printf("Perfect!\n");
-			}
-
-			if (stack.direction > 0.0f) {
-				// Me estaba moviendo hacia la derecha
-				// Comprobar la distancia al centro, si es mayor que 0 significa que me he pasado por la derecha
-				if (t->position_[0] > 0.0f) {
-
-					// Para saber cuanto tengo que quitar tengo que tener en cuenta el stack anterior
-					t->scale_[0] -= t->position_[0];
-					//t->position_[0] = 0.0f;
+			}else{
+				// Pillo lo que me he pasado
+				float abs = std::abs(t->position_[0]);
+				t->scale_[0] -= abs;
+				if (t->scale_[0] <= 0.0f) {
+					t->scale_[0] = 0.0f;
+					end_game = true;
 				}
-			}else {
-				// Me estaba moviendo hacia la izquierda
-				
+				t->position_[0] = 0.0f;
 			}
+
+			
+
 		}
 	}else {
 		clicked = false;
@@ -94,17 +108,6 @@ bool MoveStack(int id_stack, double dt, Elysium& e, Input& in){
 	// Moving
 	if (stack.moving) {
 		t->position_[0] += (dt * stack.direction) * stack_speed;
-		
-		//float value = (0.01f * stack.direction) * stack_speed;
-		//t->position_[0] += value;
-
-		// Control error
-		/*if (t->position_[0] > max_distance) {
-			t->position_[0] = max_distance - 0.01f;
-		}
-		if (t->position_[0] < -max_distance) {
-			t->position_[0] = -max_distance + 0.01f;
-		}*/
 	}
 
 	
@@ -199,9 +202,9 @@ int main(int, char**) {
 	UIText score("Score: ", 25.0f, 25.0f, 1.0f, { 0.1f,0.8f,0.1f });
 	ely.ecs.set_entity_component_value(text_1, score);
 
-	//auto text_2 = ely.ecs.add_entity();
-	//UIText auxiliar2("", 400.0f, 400.0f, 1.0f, { 1.0f,0.0f,0.0f });
-	//ely.ecs.set_entity_component_value(text_2, auxiliar2);
+	auto text_2 = ely.ecs.add_entity();
+	UIText auxiliar2("", (1024.0f * 0.5f) - 250.0f, 400.0f, 1.3f, { 0.1f,1.0f,0.1f });
+	ely.ecs.set_entity_component_value(text_2, auxiliar2);
 
 	Light ambientlight(Light::Type::kAmbient_Light);
 	auto ambient_entity = ely.ecs.add_entity();
@@ -229,25 +232,32 @@ int main(int, char**) {
 		ely.cam.apply();
 		ely.graph.apply();
 
-		if (frame_count >= 20) {
+		if (frame_count >= 20 && !end_game) {
 			if (MoveStack(current_stack, w.getDeltaTime(), ely, input)) {
 				current_stack++;
 				current_stack %= TOTAL_STACKS;
 				stacks[current_stack].moving = true;
+				if (!end_game) {
+					Transform* t = ely.ecs.get_entity_component<Transform>(stacks[current_stack].id);
+					t->position_[1] = current_height;
+				}
 				current_height += distance_between_stacks;
 				transform_cam->position_[1] += distance_between_stacks;
 			}
+		}else if(frame_count > 20){
+			UIText* edit_text2 = ely.ecs.get_entity_component<UIText>(text_2);
+			std::string text = "FINAL SCORE  " + std::to_string(score_user);
+			edit_text2->text_ = text;
 		}
 		ely.cam.updateEditorCamera(w.getDeltaTime());
 
 
 		UIText* edit_text2 = ely.ecs.get_entity_component<UIText>(text_1);
 		std::string entityName = "Score: ";
-
 		entityName += std::to_string(score_user);
-		
 		edit_text2->text_ = entityName;
 
+		
 
 
 
