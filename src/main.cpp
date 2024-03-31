@@ -2,6 +2,7 @@
 
 #include "engine/elysium.h"
 //#include "private/include/stack.h"
+#include <iostream>
 
 #define TOTAL_STACKS 39
 
@@ -30,39 +31,84 @@ static float distance_between_stacks = 2.0f;
 static bool clicked = false;
 static bool clicked_last_frame = false;
 
+static unsigned int score_user = 0;
 
-bool MoveStack(Stack& stack, double dt, Elysium& e, Input& in){
+
+bool MoveStack(int id_stack, double dt, Elysium& e, Input& in){
 
 	clicked_last_frame = clicked;
 	bool ret = false;
 	
+	Stack& stack = stacks[id_stack];
 	Transform* t = e.ecs.get_entity_component<Transform>(stack.id);
 
 	// Check input
 	if (in.isMouseButtonPressed("MOUSE LEFT")) {
 		//printf("MOUSE LEFT\n");
+		score_user++;
 		if (!clicked || !clicked_last_frame) {
 			// Check only one click per time
 			stack.moving = false;
 			ret = true;
 			clicked = true;
+
+			// Comprobar lo cerca que me he quedado
+			// between default_distance
+			printf("Position-> %f\n",t->position_[0]);
+
+			if (t->position_[0] < 0.1f) {
+				printf("Perfect!\n");
+			}
+
+			if (stack.direction > 0.0f) {
+				// Me estaba moviendo hacia la derecha
+				// Comprobar la distancia al centro, si es mayor que 0 significa que me he pasado por la derecha
+				if (t->position_[0] > 0.0f) {
+
+					// Para saber cuanto tengo que quitar tengo que tener en cuenta el stack anterior
+					t->scale_[0] -= t->position_[0];
+					//t->position_[0] = 0.0f;
+				}
+			}else {
+				// Me estaba moviendo hacia la izquierda
+				
+			}
 		}
 	}else {
 		clicked = false;
 	}
 
-
-
 	// Check distance
-	if (t->position_[0] >= max_distance || t->position_[0] <= (-max_distance)) {
+	if (t->position_[0] >= max_distance) {
 		stack.direction *= -1.0f;
+		t->position_[0] = max_distance - 0.01f;
 	}
+
+	if (t->position_[0] <= (-max_distance)) {
+		stack.direction *= -1.0f;
+		t->position_[0] = (-max_distance) + 0.01f;
+	}
+
+
 
 	// Moving
 	if (stack.moving) {
-		t->position_[0] += (dt * stack_speed) * stack.direction;
+		t->position_[0] += (dt * stack.direction) * stack_speed;
+		
+		//float value = (0.01f * stack.direction) * stack_speed;
+		//t->position_[0] += value;
+
+		// Control error
+		/*if (t->position_[0] > max_distance) {
+			t->position_[0] = max_distance - 0.01f;
+		}
+		if (t->position_[0] < -max_distance) {
+			t->position_[0] = -max_distance + 0.01f;
+		}*/
 	}
-	//printf("hola %f\n", t->position_[0]);
+
+	
+	printf("hola %f dt: %f\n", t->position_[0], dt);
 
 
 	// Cuando detecte el click, dejar de mover al bicho, comprobar la posicion y aumentar el stack actual
@@ -149,9 +195,9 @@ int main(int, char**) {
 
 	//std::shared_ptr<Geometry> cube = primitive.getCube();	
 
-	//auto text_1 = ely.ecs.add_entity();
-	//UIText auxiliar("Jumps: ", 25.0f, 25.0f, 1.0f, { 0.5f,0.8f,0.2f });
-	//ely.ecs.set_entity_component_value(text_1, auxiliar);
+	auto text_1 = ely.ecs.add_entity();
+	UIText score("Score: ", 25.0f, 25.0f, 1.0f, { 0.1f,0.8f,0.1f });
+	ely.ecs.set_entity_component_value(text_1, score);
 
 	//auto text_2 = ely.ecs.add_entity();
 	//UIText auxiliar2("", 400.0f, 400.0f, 1.0f, { 1.0f,0.0f,0.0f });
@@ -184,14 +230,30 @@ int main(int, char**) {
 		ely.graph.apply();
 
 		if (frame_count >= 20) {
-			if (MoveStack(stacks[current_stack], w.getDeltaTime(), ely, input)) {
+			if (MoveStack(current_stack, w.getDeltaTime(), ely, input)) {
 				current_stack++;
 				current_stack %= TOTAL_STACKS;
+				stacks[current_stack].moving = true;
 				current_height += distance_between_stacks;
 				transform_cam->position_[1] += distance_between_stacks;
 			}
 		}
 		ely.cam.updateEditorCamera(w.getDeltaTime());
+
+
+		UIText* edit_text2 = ely.ecs.get_entity_component<UIText>(text_1);
+		std::string entityName = "Score: ";
+
+		entityName += std::to_string(score_user);
+		
+		edit_text2->text_ = entityName;
+
+
+
+
+		tex_sys.apply(ely.ecs, w);
+
+		
 
 		frame_count++;
 		w.render();
