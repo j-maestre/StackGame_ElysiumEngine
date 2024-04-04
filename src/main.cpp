@@ -189,6 +189,7 @@ void ReStart(Elysium& ely, Stack* stacks){
 	current_stack = TOTAL_STACKS - 1;
 	frame_count = 0;
 	current_height = TOTAL_STACKS * 2.0f;
+	score_user = 0;
 
 	for (int i = 0; i < TOTAL_STACKS; i++) {
 		Transform* t = ely.ecs.get_entity_component<Transform>(stacks[i].id);
